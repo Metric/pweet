@@ -137,7 +137,7 @@ app.post('/block', async (req, res) => {
     }
     catch (e) {
         console.log(e);
-        if(res.sent) {
+        if(!res.sent) {
             res.status(500).end();
         }
     }

@@ -11,7 +11,7 @@ class Block {
     constructor(prev) {
         prev = prev || {};
         prev.id = prev.id || 0;
-        
+
         //we use one decimal place
         this.pid = prev.id;
         this.previous = prev.hash || null;
@@ -82,6 +82,7 @@ class Block {
         return {
             previous: this.previous,
             id: this.id,
+            pid: this.pid,
             messages: this.messages,
             hash: this.hash
         };
