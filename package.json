@@ -1,0 +1,20 @@
+{
+  "name": "pweetnode",
+  "version": "0.1.0",
+  "description": "The server node for PweetChain",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "everyone",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^2.6.1",
+    "body-parser": "^1.18.3",
+    "cuckoo-cycle": "^0.2.0",
+    "express": "^4.16.4",
+    "striptags": "^3.1.1",
+    "tweetnacl": "^1.0.0",
+    "uuid": "^3.3.2"
+  }
+}
