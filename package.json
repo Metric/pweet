@@ -9,7 +9,7 @@
   "author": "everyone",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.6.1",
+    "async": "^2.6.2",
     "body-parser": "^1.18.3",
     "cuckoo-cycle": "^0.2.0",
     "express": "^4.16.4",
