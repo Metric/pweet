@@ -203,7 +203,7 @@ app.get('/last', (req, res) => {
     res.status(200).json(chain.last.toObject());
 });
 
-app.get('/search/replies/:id([A-Za-z0-9\-]{1,})/page/:page([0-9]{1,}', (req, res) => {
+app.get('/search/replies/:id([A-Za-z0-9\-]{1,})/page/:page([0-9]{1,})', (req, res) => {
     let block = chain.last;
 
     let page = parseInt(req.params.page) || 1;

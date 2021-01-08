@@ -54,6 +54,8 @@ class PweetChain extends EventEmitter {
     }
 
     consensus(block) {
+		let fpath = null;
+		
         const blk = Block.fromJson(block);
         //handle first block override
         if(blk.previous === null && blk.pid === 0 
@@ -64,7 +66,7 @@ class PweetChain extends EventEmitter {
 
             this.last = new Block(blk);
             
-            const fpath = path.join(this.spath, blk.id + '.blk');
+            fpath = path.join(this.spath, blk.id + '.blk');
             const lpath = path.join(this.spath, 'last');
 
             fs.writeFileSync(fpath, JSON.stringify(blk.toObject()));
@@ -75,7 +77,7 @@ class PweetChain extends EventEmitter {
 
         const pid = this.last.pid;
 
-        const fpath = path.join(this.spath, pid + '.blk');
+        fpath = path.join(this.spath, pid + '.blk');
 
         if(!fs.existsSync(fpath)) return false;
 
@@ -86,7 +88,7 @@ class PweetChain extends EventEmitter {
 
         this.last = new Block(blk);
         
-        const fpath = path.join(this.spath, blk.id + '.blk');
+        fpath = path.join(this.spath, blk.id + '.blk');
         const lpath = path.join(this.spath, 'last');
 
         fs.writeFileSync(fpath, JSON.stringify(blk.toObject()));
