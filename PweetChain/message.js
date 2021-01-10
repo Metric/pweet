@@ -8,7 +8,7 @@ const Utils = require('./utils');
 
 const INITIAL_EPOCH = new Date(2018,7,9).getTime();
 
-const DIFF = (50 * Cuckoo.SIZE / 100);
+const DIFF = (49 * Cuckoo.SIZE / 100);
 
 class Message {
     constructor(json) {
