@@ -42,25 +42,26 @@ class Block {
 
     get currentHash() {
         const keys = Object.keys(this.seenMessages);
-        return Hasher.hash(keys.join(',') + this.previous + this.pid + this.id);
+        return Hasher.hash(keys.join(',') + (this.previous || '') + this.pid + this.id);
     }
 
     get isFull() {
         return this.messages.reduce((a,b) => a.size + b.size, 0) >= MAX_BLOCK_SIZE;
     }
 
-    isCurrentValid() {
+    isCurrentValid(ignoreFull) {
         if(this.hash !== this.currentHash) return false;
-        if(!this.isFull) return false;
+        if(!this.isFull && !ignoreFull) return false;
         return this.containsValidMessages();
     }
 
-    isValid(prev) {
-        if(this.previous !== prev.hash) return false;
+    isValid(prev, ignoreFull) {
+        if(this.previous !== prev.currentHash 
+            || prev.hash !== prev.currentHash) return false;
         if(this.id !== prev.id + 0.1) return false;
         if(this.pid !== prev.id) return false;
         if(this.hash !== this.currentHash) return false;
-        if(!this.isFull) return false;
+        if(!this.isFull && !ignoreFull) return false;
         return this.containsValidMessages();
     }
 

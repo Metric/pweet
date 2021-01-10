@@ -3,7 +3,7 @@
 const nacl = require('tweetnacl');
 
 exports.hash = (data) => {
-    return Buffer.from(nacl.hash(data)).toString('hex');
+    return Buffer.from(nacl.hash(Buffer.from(data, 'utf8'))).toString('hex');
 };
 
 /**

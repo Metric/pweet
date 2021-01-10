@@ -19,7 +19,14 @@ class PweetChain extends EventEmitter {
         const lpath = path.join(this.spath, 'last');
         if (fs.existsSync(lpath)) {
             this.last = Block.fromJson(JSON.parse(fs.readFileSync(lpath).toString('utf8')));
+            if (!this.last.hash) {
+                this.last.hash = this.last.currentHash;
+            }
         }
+    }
+
+    resetToOrigin() {
+        this.last = new Block();
     }
 
     add(message) {
@@ -31,9 +38,9 @@ class PweetChain extends EventEmitter {
             return false;
         }
 
-        if(this.last.isFull) {
-            this.last.hash = this.last.currentHash;
+        this.last.hash = this.last.currentHash;
 
+        if(this.last.isFull) {
             const blk = this.last;
             this.last = new Block(blk);
 
@@ -94,6 +101,45 @@ class PweetChain extends EventEmitter {
         fs.writeFileSync(fpath, JSON.stringify(blk.toObject()));
         fs.writeFileSync(lpath, JSON.stringify(this.last.toObject()));
         
+        return true;
+    }
+
+    copyLast(block) {
+        let fpath = null;
+        const lpath = path.join(this.spath, 'last');
+
+        const blk = Block.fromJson(block);
+        if (blk.id !== this.last.id) {
+            return false;
+        }
+
+        //handle first block override
+        if(blk.previous === null && blk.pid === 0 
+            && this.last.pid === 0 && this.last.previous === null) {
+            const v = blk.isCurrentValid(true);
+
+            if(!v) return false;
+
+            this.last = blk;
+
+            fs.writeFileSync(lpath, JSON.stringify(this.last.toObject())); 
+
+            return true;
+        }
+
+        const pid = this.last.pid;
+        fpath = path.join(this.spath, pid + '.blk');
+
+        if(!fs.existsSync(fpath)) return false;
+
+        const pblk = Block.fromJson(JSON.parse(fs.readFileSync(fpath).toString('utf8')));
+
+        const v = blk.isValid(pblk, true);
+        if(!v) return false;
+
+        this.last = blk;
+        fs.writeFileSync(lpath, JSON.stringify(this.last.toObject())); 
+
         return true;
     }
 

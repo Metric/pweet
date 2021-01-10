@@ -72,30 +72,63 @@ const Sync = async () => {
         }
     }
 
-    try {
-        if(longestChain !== null) {
-            let blk = await request.get(url.resolve(longestChain, 'block/' + chain.last.id));
-            let v = chain.consensus(blk);
+    if(longestChain !== null) {
+        let blk = null;
+        let v = null;
+        let failedConsensus = false;
+
+        try {
+            blk = await request.get(url.resolve(longestChain, 'block/' + chain.last.id));
+            v = chain.consensus(blk);
 
             if(!v) {
-                return;
+                console.log('resetting chain to origin state due to no consensus with longest chain');
+                chain.resetToOrigin();
             }
+        }
+        catch (e) {
+            console.log(e);
+        }
 
-            for(let i = chain.last.id; i < max; i += 0.1) {
-                try {
-                    blk = await request.get(url.resolve(longestChain, 'block/' + i));
-                    v = chain.consensus(blk);
-                    if(!v) break;
-                }
-                catch (e) {
-                    console.log(e);
+        for(let i = chain.last.id; i < max; i += 0.1) {
+            try {
+                blk = await request.get(url.resolve(longestChain, 'block/' + i));
+                v = chain.consensus(blk);
+                if(!v) {
+                    failedConsensus = true;
                     break;
                 }
             }
+            catch (e) {
+                console.log(e);
+                break;
+            }
+        }
+
+        try {
+            if (failedConsensus) {
+                console.log('consensus failed with longest chain. restarting sync.');
+                setTimeout(() => {
+                    Sync();
+                }, 1);
+                return;
+            }
+
+            blk = await request.get(url.resolve(longestChain, 'last'))
+            v = chain.copyLast(blk);
+            if (!v) {
+                console.log('failed to copy latest block info from longest chain');
+            }
+        }
+        catch (e) {
+            console.log(e);
         }
     }
-    catch (e) {
-        console.log(e);
+
+    if (config.syncOnly) {
+        setTimeout(() => {
+            Sync();
+        }, config.syncInterval || 5000);
     }
 };
 
@@ -379,10 +412,17 @@ const Load = async () => {
         knownPeers[p] = true;
     });
 
+    //initial sync
+    //we do not alert the peers of 
+    //our presence yet
     await Sync();
 
     app.listen(config.port, config.local, async () => {
         console.log('pweet node listening on: ' + config.local + ':' + config.port);
+
+        if (config.syncOnly) {
+            return;
+        }
 
         //for each peer alert them to us
         for(let i = 0; i < peers.length; i++) {
@@ -393,7 +433,7 @@ const Load = async () => {
             }
 
             try {
-                await request.post(path.join(peer, 'peer'), { address: config.address });
+                await request.post(url.resolve(peer, 'peer'), { address: config.address });
             }
             catch (e) {
                 console.log(e);
