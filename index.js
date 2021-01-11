@@ -62,7 +62,7 @@ const Sync = async () => {
             let id = await request.get(url.resolve(peer, 'last/id'));
             id = parseFloat(id);
 
-            if(id > max && !Number.isNaN(id)) {
+            if(id > max && !Number.isNaN(id) && Number.isFinite(id)) {
                 max = id;
                 longestChain = peer;
             }
@@ -124,6 +124,7 @@ const Sync = async () => {
                 }
             }
             catch (e) {
+                failedConsensus = true;
                 console.log(e);
                 break;
             }
@@ -131,6 +132,13 @@ const Sync = async () => {
 
         if (failedConsensus) {
             console.log('consensus failed with longest chain.');
+            
+            if (config.syncOnly) {
+                setTimeout(() => {
+                    Sync();
+                }, config.syncInterval || 5000);
+            }
+
             return;
         }
 
