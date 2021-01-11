@@ -349,6 +349,61 @@ app.get('/search/address/:address([A-Za-z0-9]{1,})/page/:page([0-9]{1,})', (req,
     );
 });
 
+app.get('/message/:id([A-Za-z0-9\-]{1,})', (req, res) => {
+    let block = chain.last;
+    const id = req.params.id;
+    let message = {};
+
+    if(!id || id.length === 0) {
+        res.status(200).json(message);
+        return;
+    }
+
+    async.whilst(() => block !== null,
+        (cb) => {
+            async.eachSeries(block.messages, (m, cb2) => {
+                if (m.id === id) {
+                    message = m;
+                    cb2('found');
+                    return;
+                }
+                cb2();
+            },
+            async (err) => {
+                if(err && err !== 'found') {
+                    console.log(err);
+                }
+
+                if (err === 'found') {
+                    block = null;
+                    cb();
+                    return;
+                }
+
+                if(block.previous !== null) {
+                    try {
+                        block = await chain.get(block.pid);
+                    }
+                    catch (e) {
+                        console.log(e);
+                        block = null;
+                    }
+                }
+                else {
+                    block = null;
+                }
+                cb();
+            });
+        },
+        (err) => {
+            if(err) {
+                console.log(err);
+            }
+            res.status(200).json(message);
+        }
+    );
+});
+
 app.get('/search/tag/:tag([A-Za-z0-9_-]{1,})/page/:page([0-9]{1,})', (req, res) => {
     let block = chain.last;
 
