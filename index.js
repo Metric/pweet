@@ -76,18 +76,42 @@ const Sync = async () => {
         let blk = null;
         let v = null;
         let failedConsensus = false;
+        let findPrevious = false;
 
         try {
             blk = await request.get(url.resolve(longestChain, 'block/' + chain.last.id));
             v = chain.consensus(blk);
 
             if(!v) {
-                console.log('resetting chain to origin state due to no consensus with longest chain');
-                chain.resetToOrigin();
+                console.log('last block consensus failed. trying to find previous block with consensus.');
+                findPrevious = true;
             }
         }
         catch (e) {
             console.log(e);
+        }
+
+        if (findPrevious) {
+            let foundConsensus = false;
+            for(let i = chain.last.id - 0.1; i > 0; i -= 0.1) {
+                try {
+                    blk = await request.get(url.resolve(longestChain, 'block/' + i));
+                    v = chain.consensus(blk);
+                    if (v) {
+                        console.log('consensus found at block: ' + i);
+                        foundConsensus = true;
+                        break;
+                    }
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
+
+            if (!foundConsensus) {
+                console.log('consensus could not be found. resetting to origin.');
+                chain.resetToOrigin();
+            }
         }
 
         for(let i = chain.last.id; i < max; i += 0.1) {
@@ -105,15 +129,12 @@ const Sync = async () => {
             }
         }
 
-        try {
-            if (failedConsensus) {
-                console.log('consensus failed with longest chain. restarting sync.');
-                setTimeout(() => {
-                    Sync();
-                }, 1);
-                return;
-            }
+        if (failedConsensus) {
+            console.log('consensus failed with longest chain.');
+            return;
+        }
 
+        try {
             blk = await request.get(url.resolve(longestChain, 'last'))
             v = chain.copyLast(blk);
             if (!v) {
