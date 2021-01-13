@@ -14,15 +14,23 @@ const url = require('url');
 const async = require('async');
 
 const PER_PAGE = 20;
+const PEER_IS_ALIVE_TIME = 1000 * 60 * 20;
+const PEER_NOTIF_INTERNVAL = 1000 * 60 * 10;
 
 const SendBlockToPeers = async (block) => {
     for(let i = 0; i < peers.length; i++) {
         try {
-            if(peers[i] === config.address) {
+            const k = peers[i];
+
+            if(k === config.address) {
                 continue;
             }
 
-            await request.post(url.resolve(peers[i], 'block'), block);
+            const ts = knownPeers[k];
+            if ((Date.now() - ts) <= PEER_IS_ALIVE_TIME) {
+                await request.post(url.resolve(k, 'block'), block);
+                knownPeers[k] = Date.now();
+            }
         }
         catch (e) {
             console.log(e);
@@ -33,11 +41,17 @@ const SendBlockToPeers = async (block) => {
 const SendMessageToPeers = async (msg) => {
     for(let i = 0; i < peers.length; i++) {
         try {
-            if(peers[i] === config.address) {
+            const k = peers[i];
+
+            if(k === config.address) {
                 continue;
             }
 
-            await request.post(url.resolve(peers[i], 'message'), msg);
+            const ts = knownPeers[k];
+            if ((Date.now() - ts) <= PEER_IS_ALIVE_TIME) {
+                await request.post(url.resolve(k, 'message'), msg);
+                knownPeers[k] = Date.now();
+            }
         }
         catch (e) {
             console.log(e);
@@ -60,7 +74,7 @@ const Sync = async () => {
 
         try {
             let id = await request.get(url.resolve(peer, 'last/id'));
-            id = parseFloat(id);
+            id = Number(id);
 
             if(id > max && !Number.isNaN(id) && Number.isFinite(id)) {
                 max = id;
@@ -249,9 +263,12 @@ app.post('/peer', async (req, res) => {
     const p = req.body.address;
 
     if (!knownPeers[p] && p && p.length > 0) {
-        knownPeers[p] = true;
+        knownPeers[p] = Date.now();
         peers.push(p);
         config.savePeers(peers);
+    }
+    else if(knownPeers[p] && p && p.length > 0) {
+        knownPeers[p] = Date.now();
     }
 
     res.status(200).send('OK').end();
@@ -490,10 +507,35 @@ app.get('/search/tag/:tag([A-Za-z0-9_-]{1,})/page/:page([0-9]{1,})', (req, res) 
     );
 });
 
+let peerInterval = null;
+
+const SendPeerInfo = async () => {
+    if (config.syncOnly) {
+        return;
+    }
+
+    //for each peer alert them to us
+    for(let i = 0; i < peers.length; i++) {
+        const peer = peers[i];
+
+        if(peer === config.address) {
+            continue;
+        }
+
+        try {
+            await request.post(url.resolve(peer, 'peer'), { address: config.address });
+            knownPeers[peer] = Date.now();
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
+}
+
 const Load = async () => {
     //setup our known peers
     peers.forEach(p => {
-        knownPeers[p] = true;
+        knownPeers[p] = 0; //default to 0 timestamp
     });
 
     //initial sync
@@ -503,25 +545,11 @@ const Load = async () => {
 
     app.listen(config.port, config.local, async () => {
         console.log('pweet node listening on: ' + config.local + ':' + config.port);
+        if (!config.syncOnly) {
+            peerInterval = setInterval(SendPeerInfo, PEER_NOTIF_INTERNVAL);
 
-        if (config.syncOnly) {
-            return;
-        }
-
-        //for each peer alert them to us
-        for(let i = 0; i < peers.length; i++) {
-            const peer = peers[i];
-
-            if(peer === config.address) {
-                continue;
-            }
-
-            try {
-                await request.post(url.resolve(peer, 'peer'), { address: config.address });
-            }
-            catch (e) {
-                console.log(e);
-            }
+            //send initial peer info if needed
+            await SendPeerInfo();
         }
     });
 };

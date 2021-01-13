@@ -9,12 +9,12 @@
   "author": "everyone",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.6.2",
-    "body-parser": "^1.18.3",
-    "cuckoo-cycle": "^0.2.0",
-    "express": "^4.16.4",
+    "async": "^2.6.3",
+    "body-parser": "^1.19.0",
+    "cuckoo-cycle": "^0.3.0",
+    "express": "^4.17.1",
     "striptags": "^3.1.1",
-    "tweetnacl": "^1.0.0",
-    "uuid": "^3.3.2"
+    "tweetnacl": "^1.0.3",
+    "uuid": "^3.4.0"
   }
 }

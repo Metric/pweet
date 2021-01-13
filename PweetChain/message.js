@@ -3,12 +3,12 @@
 const UUID = require('uuid/v4');
 const Hasher = require('./hasher');
 const striptags = require('striptags');
-const {Cuckoo} = require('cuckoo-cycle');
+const {Cuckoo64} = require('cuckoo-cycle');
 const Utils = require('./utils');
 
 const INITIAL_EPOCH = new Date(2018,7,9).getTime();
 
-const DIFF = (49 * Cuckoo.SIZE / 100);
+const DIFF = (49 * Cuckoo64.SIZE / 100);
 
 class Message {
     constructor(json) {
@@ -18,7 +18,7 @@ class Message {
         this.name = json.name ? striptags(json.name) : '';
         this.address = json.address ? striptags(json.address) : '';
         this.message = json.message ? striptags(json.message) : '';
-        this.date = json.date ? parseFloat(json.date) : Date.now();
+        this.date = json.date ? Number(json.date) : Date.now();
         this.replyTo = json.replyTo ? striptags(json.replyTo) : '';
 
         this.signature = json.signature ? striptags(json.signature) : '';
@@ -53,7 +53,7 @@ class Message {
             if(!this.message || Utils.getLength(this.message) > Utils.MAX_LENGTH || Utils.isExcessive(this.message)) return false;
 
             //validate cuckoo-cycle
-            const cuckoo = new Cuckoo(this.hash, true);
+            const cuckoo = new Cuckoo64(this.hash, true);
             if(!cuckoo.verify(this.solution, DIFF)) return false;
 
             if(!this.isValidSignature()) return false;
